@@ -82,8 +82,12 @@ export default function App() {
   const [targetPercent, setTargetPercent] = useState("0.55");
   const [increasePercent, setIncreasePercent] = useState("0.07");
   const [changedWaterTons, setChangedWaterTons] = useState("2");
+  const [unit, setUnit] = useState("t");
 
-  const tons = parseNumber(pondTons);
+  const tons =
+  unit === "t"
+    ? parseNumber(pondTons)
+    : parseNumber(pondTons) / 1000;
   const current = parseNumber(currentPercent);
   const target = parseNumber(targetPercent);
   const increase = parseNumber(increasePercent);
@@ -196,13 +200,32 @@ export default function App() {
             </div>
 
             <div>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>池の水量（t）</div>
-              <input
-                style={inputStyle()}
-                value={pondTons}
-                onChange={(e) => setPondTons(e.target.value)}
-                inputMode="decimal"
-              />
+            <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+  <button
+    style={buttonStyle(unit === "t")}
+    onClick={() => setUnit("t")}
+  >
+    t
+  </button>
+
+  <button
+    style={buttonStyle(unit === "L")}
+    onClick={() => setUnit("L")}
+  >
+    L
+  </button>
+</div>
+
+<div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+  池の水量（{unit}）
+</div>
+
+<input
+  style={inputStyle()}
+  value={pondTons}
+  onChange={(e) => setPondTons(e.target.value)}
+  inputMode="decimal"
+/>
             </div>
 
             <div>
