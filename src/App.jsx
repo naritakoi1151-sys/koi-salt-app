@@ -132,16 +132,36 @@ export default function App() {
   </div>
 
   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-    <button
-      style={buttonStyle(false)}
-      onClick={() => {
-        setTab("target");
-        setTargetPercent("0.50");
-      }}
-    >
-      0.5%まで計算
-    </button>
-  </div>
+  <button
+    style={buttonStyle(false)}
+    onClick={() => {
+      setTab("target");
+      setTargetPercent("0.30");
+    }}
+  >
+    0.3%まで計算
+  </button>
+
+  <button
+    style={buttonStyle(false)}
+    onClick={() => {
+      setTab("target");
+      setTargetPercent("0.50");
+    }}
+  >
+    0.5%まで計算
+  </button>
+
+  <button
+    style={buttonStyle(false)}
+    onClick={() => {
+      setTab("target");
+      setTargetPercent("0.60");
+    }}
+  >
+    0.6%まで計算
+  </button>
+</div>
 
   <div
             style={{
