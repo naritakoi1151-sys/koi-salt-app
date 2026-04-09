@@ -152,9 +152,9 @@ export default function App() {
           >
             Narita 塩分濃度計算 Webアプリ
           </div>
-          <h1 style={{ margin: 0, fontSize: 32 }}>塩投入量をすぐ計算</h1>
+          <h1 style={{ margin: 0, fontSize: 32 }}>らくらく塩分濃度計算</h1>
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-            現場ですぐ使えるシンプル版です。
+            すぐ使えてシンプル。
           </p>
         </div>
 
