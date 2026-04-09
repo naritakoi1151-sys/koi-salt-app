@@ -152,7 +152,7 @@ export default function App() {
           >
             Narita 塩分濃度計算 Webアプリ
           </div>
-          <h1 style={{ margin: 0, fontSize: 32 }}>らくらく塩分濃度計算</h1>
+          <h1 style={{ margin: 0, fontSize: 32 }}>ラクラク塩分濃度計算</h1>
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
             すぐ使えてシンプル。
           </p>
