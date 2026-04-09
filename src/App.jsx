@@ -286,16 +286,7 @@ export default function App() {
               </div>
             </div>
           </div>
-        )}
-
-        <div style={cardStyle()}>
-          <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>ホーム画面追加までの流れ</div>
-          <div style={{ display: "grid", gap: 12, color: "#334155", lineHeight: 1.7 }}>
-            <div style={infoBoxStyle()}>1. このコードを Vite の React プロジェクトに入れる</div>
-            <div style={infoBoxStyle()}>2. Vercel にデプロイする</div>
-            <div style={infoBoxStyle()}>3. iPhoneのSafariで開いて「ホーム画面に追加」する</div>
-          </div>
-        </div>
+        )} 
       </div>
     </div>
   );
