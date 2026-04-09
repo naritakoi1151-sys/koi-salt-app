@@ -126,9 +126,24 @@ export default function App() {
           </p>
         </div>
 
-        <div style={cardStyle()}>
-          <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>共通入力</div>
-          <div
+       <div style={cardStyle()}>
+  <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+    共通入力
+  </div>
+
+  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+    <button
+      style={buttonStyle(false)}
+      onClick={() => {
+        setTab("target");
+        setTargetPercent("0.50");
+      }}
+    >
+      0.5%まで計算
+    </button>
+  </div>
+
+  <div
             style={{
               display: "grid",
               gap: 16,
