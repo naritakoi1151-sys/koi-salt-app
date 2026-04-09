@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from "react";
 
-function formatKg(value) {
-  if (!isFinite(value)) return "-";
-  return new Intl.NumberFormat("ja-JP", {
-    maximumFractionDigits: 1,
-  }).format(value);
+function formatSalt(kg) {
+  if (!isFinite(kg)) return "-";
+  if (kg < 1) {
+    return `${Math.round(kg * 1000)} g`;
+  }
+  return `${kg.toFixed(2)} kg`;
 }
 
 function formatPercent(value) {
@@ -77,26 +78,31 @@ function infoBoxStyle(bg = "#f8fafc") {
 export default function App() {
   const [tab, setTab] = useState("target");
   const [pondName, setPondName] = useState("千秋池");
-  const [pondTons, setPondTons] = useState("88");
+  const [pondVolume, setPondVolume] = useState("88");
+  const [unit, setUnit] = useState("t");
   const [currentPercent, setCurrentPercent] = useState("0.48");
   const [targetPercent, setTargetPercent] = useState("0.55");
   const [increasePercent, setIncreasePercent] = useState("0.07");
-  const [changedWaterTons, setChangedWaterTons] = useState("2");
-  const [unit, setUnit] = useState("t");
+  const [changedWaterVolume, setChangedWaterVolume] = useState("2");
 
   const tons =
-  unit === "t"
-    ? parseNumber(pondTons)
-    : parseNumber(pondTons) / 1000;
+    unit === "t"
+      ? parseNumber(pondVolume)
+      : parseNumber(pondVolume) / 1000;
+
+  const changedTons =
+    unit === "t"
+      ? parseNumber(changedWaterVolume)
+      : parseNumber(changedWaterVolume) / 1000;
+
   const current = parseNumber(currentPercent);
   const target = parseNumber(targetPercent);
   const increase = parseNumber(increasePercent);
-  const changed = parseNumber(changedWaterTons);
 
   const targetDiff = Math.max(target - current, 0);
   const targetKg = tons * targetDiff * 10;
   const increaseKg = tons * increase * 10;
-  const refillKg = changed * current * 10;
+  const refillKg = changedTons * current * 10;
   const finalPercent = current + increase;
 
   const quickRows = [0.1, 0.2, 0.3, 0.5, 0.6].map((percent) => ({
@@ -108,8 +114,8 @@ export default function App() {
     const amount = tab === "target" ? targetKg : increaseKg;
     if (amount <= 0) return "必要量を入力すると分割目安が出ます。";
     if (amount < 30) return "少量なので一度でも可。ただし分散投入推奨。";
-    if (amount < 100) return `2回分割目安：${formatKg(amount / 2)}kg × 2回`;
-    return `3回分割目安：${formatKg(amount / 3)}kg × 3回`;
+    if (amount < 100) return `2回分割目安：${formatSalt(amount / 2)} × 2回`;
+    return `3回分割目安：${formatSalt(amount / 3)} × 3回`;
   }, [tab, targetKg, increaseKg]);
 
   const targetMemo =
@@ -200,32 +206,32 @@ export default function App() {
             </div>
 
             <div>
-            <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-  <button
-    style={buttonStyle(unit === "t")}
-    onClick={() => setUnit("t")}
-  >
-    t
-  </button>
+              <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                <button
+                  style={buttonStyle(unit === "t")}
+                  onClick={() => setUnit("t")}
+                >
+                  t
+                </button>
 
-  <button
-    style={buttonStyle(unit === "L")}
-    onClick={() => setUnit("L")}
-  >
-    L
-  </button>
-</div>
+                <button
+                  style={buttonStyle(unit === "L")}
+                  onClick={() => setUnit("L")}
+                >
+                  L
+                </button>
+              </div>
 
-<div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
-  池の水量（{unit}）
-</div>
+              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                池の水量（{unit}）
+              </div>
 
-<input
-  style={inputStyle()}
-  value={pondTons}
-  onChange={(e) => setPondTons(e.target.value)}
-  inputMode="decimal"
-/>
+              <input
+                style={inputStyle()}
+                value={pondVolume}
+                onChange={(e) => setPondVolume(e.target.value)}
+                inputMode="decimal"
+              />
             </div>
 
             <div>
@@ -241,7 +247,9 @@ export default function App() {
             </div>
 
             <div>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>目標濃度（%）</div>
+              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                目標濃度（%）
+              </div>
               <input
                 style={inputStyle()}
                 value={targetPercent}
@@ -306,12 +314,12 @@ export default function App() {
                 <div style={cardStyle(true)}>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>必要な塩</div>
                   <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
-                    {formatKg(targetKg)} kg
+                    {formatSalt(targetKg)}
                   </div>
                 </div>
 
                 <div style={infoBoxStyle("#ecfeff")}>
-                  差分 {formatPercent(targetDiff)} x {tons}t x 10 = {formatKg(targetKg)}kg
+                  差分 {formatPercent(targetDiff)} × {tons}t × 10 = {formatSalt(targetKg)}
                 </div>
               </div>
             </div>
@@ -376,12 +384,12 @@ export default function App() {
                 <div style={cardStyle(true)}>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>必要な塩</div>
                   <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
-                    {formatKg(increaseKg)} kg
+                    {formatSalt(increaseKg)}
                   </div>
                 </div>
 
                 <div style={infoBoxStyle("#ecfeff")}>
-                  {tons}t x {increase}% x 10 = {formatKg(increaseKg)}kg
+                  {tons}t × {increase}% × 10 = {formatSalt(increaseKg)}
                 </div>
               </div>
             </div>
@@ -405,7 +413,7 @@ export default function App() {
                     }}
                   >
                     <strong>{row.percent}% 上げる</strong>
-                    <span>{formatKg(row.kg)} kg</span>
+                    <span>{formatSalt(row.kg)}</span>
                   </div>
                 ))}
               </div>
@@ -427,13 +435,13 @@ export default function App() {
               </div>
 
               <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
-                水換え量（t）
+                水換え量（{unit}）
               </div>
 
               <input
                 style={inputStyle()}
-                value={changedWaterTons}
-                onChange={(e) => setChangedWaterTons(e.target.value)}
+                value={changedWaterVolume}
+                onChange={(e) => setChangedWaterVolume(e.target.value)}
                 inputMode="decimal"
               />
 
@@ -450,19 +458,20 @@ export default function App() {
                 <div style={infoBoxStyle()}>
                   <div style={{ fontSize: 13, color: "#475569" }}>水換え量</div>
                   <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
-                    {changed}t
+                    {changedWaterVolume}
+                    {unit}
                   </div>
                 </div>
 
                 <div style={cardStyle(true)}>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>補充する塩</div>
                   <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
-                    {formatKg(refillKg)} kg
+                    {formatSalt(refillKg)}
                   </div>
                 </div>
 
                 <div style={infoBoxStyle("#ecfeff")}>
-                  {changed}t x {current}% x 10 = {formatKg(refillKg)}kg
+                  {changedTons}t × {current}% × 10 = {formatSalt(refillKg)}
                 </div>
               </div>
             </div>
