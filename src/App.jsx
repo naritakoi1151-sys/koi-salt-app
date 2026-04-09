@@ -2,7 +2,9 @@ import React, { useMemo, useState } from "react";
 
 function formatKg(value) {
   if (!isFinite(value)) return "-";
-  return new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat("ja-JP", {
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
 function formatPercent(value) {
@@ -51,6 +53,19 @@ function buttonStyle(active = false) {
   };
 }
 
+function quickButtonStyle(active = false) {
+  return {
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: active ? "1px solid #0f172a" : "1px solid #cbd5e1",
+    background: active ? "#0f172a" : "#ffffff",
+    color: active ? "#ffffff" : "#0f172a",
+    fontWeight: 700,
+    cursor: "pointer",
+    minWidth: 96,
+  };
+}
+
 function infoBoxStyle(bg = "#f8fafc") {
   return {
     background: bg,
@@ -87,11 +102,18 @@ export default function App() {
 
   const splitSuggestion = useMemo(() => {
     const amount = tab === "target" ? targetKg : increaseKg;
-    if (amount <= 0) return null;
-    if (amount < 30) return `少量なので一度でも可。ただし分散投入推奨。`;
+    if (amount <= 0) return "必要量を入力すると分割目安が出ます。";
+    if (amount < 30) return "少量なので一度でも可。ただし分散投入推奨。";
     if (amount < 100) return `2回分割目安：${formatKg(amount / 2)}kg × 2回`;
     return `3回分割目安：${formatKg(amount / 3)}kg × 3回`;
   }, [tab, targetKg, increaseKg]);
+
+  const targetMemo =
+    target >= 0.6
+      ? "0.6%付近。短期処置向きで分割投入推奨。"
+      : target >= 0.5
+      ? "0.5%台。長期維持は注意。"
+      : "比較的マイルドな濃度帯。";
 
   return (
     <div
@@ -122,11 +144,42 @@ export default function App() {
           </div>
           <h1 style={{ margin: 0, fontSize: 32 }}>塩投入量をすぐ計算</h1>
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-            Web公開して、iPhoneのホーム画面に追加して使う前提のシンプル版です。
+            現場ですぐ使えるシンプル版です。
           </p>
         </div>
 
-  <div
+        <div style={cardStyle()}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+            <button
+              style={quickButtonStyle(targetPercent === "0.30")}
+              onClick={() => {
+                setTab("target");
+                setTargetPercent("0.30");
+              }}
+            >
+              0.3%
+            </button>
+            <button
+              style={quickButtonStyle(targetPercent === "0.50")}
+              onClick={() => {
+                setTab("target");
+                setTargetPercent("0.50");
+              }}
+            >
+              0.5%
+            </button>
+            <button
+              style={quickButtonStyle(targetPercent === "0.60")}
+              onClick={() => {
+                setTab("target");
+                setTargetPercent("0.60");
+              }}
+            >
+              0.6%
+            </button>
+          </div>
+
+          <div
             style={{
               display: "grid",
               gap: 16,
@@ -135,97 +188,186 @@ export default function App() {
           >
             <div>
               <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>池名</div>
-              <input style={inputStyle()} value={pondName} onChange={(e) => setPondName(e.target.value)} />
+              <input
+                style={inputStyle()}
+                value={pondName}
+                onChange={(e) => setPondName(e.target.value)}
+              />
             </div>
+
             <div>
               <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>池の水量（t）</div>
-              <input style={inputStyle()} value={pondTons} onChange={(e) => setPondTons(e.target.value)} inputMode="decimal" />
+              <input
+                style={inputStyle()}
+                value={pondTons}
+                onChange={(e) => setPondTons(e.target.value)}
+                inputMode="decimal"
+              />
             </div>
+
             <div>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>現在の塩分濃度（%）</div>
-              <input style={inputStyle()} value={currentPercent} onChange={(e) => setCurrentPercent(e.target.value)} inputMode="decimal" />
+              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                現在の塩分濃度（%）
+              </div>
+              <input
+                style={inputStyle()}
+                value={currentPercent}
+                onChange={(e) => setCurrentPercent(e.target.value)}
+                inputMode="decimal"
+              />
             </div>
+
             <div>
               <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>目標濃度（%）</div>
-              <input style={inputStyle()} value={targetPercent} onChange={(e) => setTargetPercent(e.target.value)} inputMode="decimal" />
+              <input
+                style={inputStyle()}
+                value={targetPercent}
+                onChange={(e) => setTargetPercent(e.target.value)}
+                inputMode="decimal"
+              />
             </div>
           </div>
         </div>
 
         <div style={cardStyle()}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button style={buttonStyle(tab === "target")} onClick={() => setTab("target")}>現在→目標</button>
-            <button style={buttonStyle(tab === "increase")} onClick={() => setTab("increase")}>指定%だけ上げる</button>
-            <button style={buttonStyle(tab === "waterchange")} onClick={() => setTab("waterchange")}>水換え補充</button>
+            <button
+              style={buttonStyle(tab === "target")}
+              onClick={() => setTab("target")}
+            >
+              現在→目標
+            </button>
+            <button
+              style={buttonStyle(tab === "increase")}
+              onClick={() => setTab("increase")}
+            >
+              指定%だけ上げる
+            </button>
+            <button
+              style={buttonStyle(tab === "waterchange")}
+              onClick={() => setTab("waterchange")}
+            >
+              水換え補充
+            </button>
           </div>
         </div>
 
         {tab === "target" && (
-          <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 20,
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            }}
+          >
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>現在濃度から目標濃度まで上げる</div>
+              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+                現在濃度から目標濃度まで上げる
+              </div>
+
               <div style={{ display: "grid", gap: 14 }}>
                 <div style={infoBoxStyle()}>
                   <div style={{ fontSize: 13, color: "#475569" }}>池名</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>{pondName || "-"}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
+                    {pondName || "-"}
+                  </div>
                 </div>
+
                 <div style={infoBoxStyle()}>
                   <div style={{ fontSize: 13, color: "#475569" }}>現在濃度 → 目標濃度</div>
                   <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
                     {formatPercent(current)} → {formatPercent(target)}
                   </div>
                 </div>
+
                 <div style={cardStyle(true)}>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>必要な塩</div>
-                  <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{formatKg(targetKg)} kg</div>
+                  <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
+                    {formatKg(targetKg)} kg
+                  </div>
                 </div>
+
                 <div style={infoBoxStyle("#ecfeff")}>
-                  差分 {formatPercent(targetDiff)} × {tons}t × 10 = {formatKg(targetKg)}kg
+                  差分 {formatPercent(targetDiff)} x {tons}t x 10 = {formatKg(targetKg)}kg
                 </div>
               </div>
             </div>
 
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>現場メモ</div>
+              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+                現場メモ
+              </div>
+
               <div style={{ display: "grid", gap: 12 }}>
-                <div style={infoBoxStyle("#fff7ed")}>
-                  {target >= 0.6 ? "0.6%付近。短期処置向きで分割投入推奨。" : target >= 0.5 ? "0.5%台。長期維持は注意。" : "比較的マイルドな濃度帯。"}
-                </div>
+                <div style={infoBoxStyle("#fff7ed")}>{targetMemo}</div>
                 <div style={infoBoxStyle()}>{splitSuggestion}</div>
-                <div style={infoBoxStyle()}>大きい池は一気投入より、複数回に分ける方が安全です。</div>
+                <div style={infoBoxStyle()}>
+                  大きい池は一気投入より、複数回に分ける方が安全です。
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {tab === "increase" && (
-          <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 20,
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            }}
+          >
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>指定した%だけ上げる</div>
-              <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>上げたい濃度（%）</div>
-              <input style={inputStyle()} value={increasePercent} onChange={(e) => setIncreasePercent(e.target.value)} inputMode="decimal" />
+              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+                指定した%だけ上げる
+              </div>
+
+              <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
+                上げたい濃度（%）
+              </div>
+
+              <input
+                style={inputStyle()}
+                value={increasePercent}
+                onChange={(e) => setIncreasePercent(e.target.value)}
+                inputMode="decimal"
+              />
+
               <div style={{ height: 16 }} />
+
               <div style={{ display: "grid", gap: 14 }}>
                 <div style={infoBoxStyle()}>
                   <div style={{ fontSize: 13, color: "#475569" }}>現在濃度</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>{formatPercent(current)}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
+                    {formatPercent(current)}
+                  </div>
                 </div>
+
                 <div style={infoBoxStyle()}>
                   <div style={{ fontSize: 13, color: "#475569" }}>投入後の推定濃度</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>{formatPercent(finalPercent)}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
+                    {formatPercent(finalPercent)}
+                  </div>
                 </div>
+
                 <div style={cardStyle(true)}>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>必要な塩</div>
-                  <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{formatKg(increaseKg)} kg</div>
+                  <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
+                    {formatKg(increaseKg)} kg
+                  </div>
                 </div>
+
                 <div style={infoBoxStyle("#ecfeff")}>
-                  {tons}t × {increase}% × 10 = {formatKg(increaseKg)}kg
+                  {tons}t x {increase}% x 10 = {formatKg(increaseKg)}kg
                 </div>
               </div>
             </div>
 
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>早見表</div>
+              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+                早見表
+              </div>
+
               <div style={{ display: "grid", gap: 10 }}>
                 {quickRows.map((row) => (
                   <div
@@ -249,33 +391,62 @@ export default function App() {
         )}
 
         {tab === "waterchange" && (
-          <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 20,
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            }}
+          >
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>水換え後の補充計算</div>
-              <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>水換え量（t）</div>
-              <input style={inputStyle()} value={changedWaterTons} onChange={(e) => setChangedWaterTons(e.target.value)} inputMode="decimal" />
+              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+                水換え後の補充計算
+              </div>
+
+              <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
+                水換え量（t）
+              </div>
+
+              <input
+                style={inputStyle()}
+                value={changedWaterTons}
+                onChange={(e) => setChangedWaterTons(e.target.value)}
+                inputMode="decimal"
+              />
+
               <div style={{ height: 16 }} />
+
               <div style={{ display: "grid", gap: 14 }}>
                 <div style={infoBoxStyle()}>
                   <div style={{ fontSize: 13, color: "#475569" }}>現在濃度</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>{formatPercent(current)}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
+                    {formatPercent(current)}
+                  </div>
                 </div>
+
                 <div style={infoBoxStyle()}>
                   <div style={{ fontSize: 13, color: "#475569" }}>水換え量</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>{changed}t</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
+                    {changed}t
+                  </div>
                 </div>
+
                 <div style={cardStyle(true)}>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>補充する塩</div>
-                  <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{formatKg(refillKg)} kg</div>
+                  <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
+                    {formatKg(refillKg)} kg
+                  </div>
                 </div>
+
                 <div style={infoBoxStyle("#ecfeff")}>
-                  {changed}t × {current}% × 10 = {formatKg(refillKg)}kg
+                  {changed}t x {current}% x 10 = {formatKg(refillKg)}kg
                 </div>
               </div>
             </div>
 
             <div style={cardStyle()}>
               <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>基準</div>
+
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={infoBoxStyle()}>0.1% = 1tあたり 1kg</div>
                 <div style={infoBoxStyle()}>0.3% = 1tあたり 3kg</div>
@@ -284,7 +455,7 @@ export default function App() {
               </div>
             </div>
           </div>
-        )} 
+        )}
       </div>
     </div>
   );
