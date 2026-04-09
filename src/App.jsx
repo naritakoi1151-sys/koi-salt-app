@@ -61,7 +61,7 @@ function infoBoxStyle(bg = "#f8fafc") {
 
 export default function App() {
   const [tab, setTab] = useState("target");
-  const [pondName, setPondName] = useState("本池");
+  const [pondName, setPondName] = useState("千秋池");
   const [pondTons, setPondTons] = useState("88");
   const [currentPercent, setCurrentPercent] = useState("0.48");
   const [targetPercent, setTargetPercent] = useState("0.55");
@@ -118,50 +118,13 @@ export default function App() {
               fontWeight: 700,
             }}
           >
-            錦鯉 塩分濃度計算 Webアプリ
+            Narita 塩分濃度計算 Webアプリ
           </div>
           <h1 style={{ margin: 0, fontSize: 32 }}>塩投入量をすぐ計算</h1>
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
             Web公開して、iPhoneのホーム画面に追加して使う前提のシンプル版です。
           </p>
         </div>
-
-       <div style={cardStyle()}>
-  <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-    共通入力
-  </div>
-
-  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-  <button
-    style={buttonStyle(false)}
-    onClick={() => {
-      setTab("target");
-      setTargetPercent("0.30");
-    }}
-  >
-    0.3%まで計算
-  </button>
-
-  <button
-    style={buttonStyle(false)}
-    onClick={() => {
-      setTab("target");
-      setTargetPercent("0.50");
-    }}
-  >
-    0.5%まで計算
-  </button>
-
-  <button
-    style={buttonStyle(false)}
-    onClick={() => {
-      setTab("target");
-      setTargetPercent("0.60");
-    }}
-  >
-    0.6%まで計算
-  </button>
-</div>
 
   <div
             style={{
