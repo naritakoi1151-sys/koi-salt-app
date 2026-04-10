@@ -95,6 +95,7 @@ export default function App() {
 
   const [reverseSalt, setReverseSalt] = useState("10");
   const [reversePercent, setReversePercent] = useState("0.5");
+  const [targetPercent2, setTargetPercent2] = useState("0.5");
 
   const tons =
     unit === "t"
@@ -120,6 +121,10 @@ export default function App() {
   const reverseP = parseNumber(reversePercent);
   const estimatedTons = reverseP > 0 ? reverseKg / (reverseP * 10) : 0;
   const estimatedVolume = unit === "t" ? estimatedTons : estimatedTons * 1000;
+
+  const target2 = parseNumber(targetPercent2);
+  const diff2 = Math.max(target2 - reverseP, 0);
+  const needKg = estimatedTons * diff2 * 10;
 
   const quickRows = [0.1, 0.2, 0.3, 0.5, 0.6].map((percent) => ({
     percent,
@@ -532,12 +537,35 @@ export default function App() {
                 />
               </div>
 
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                  目標濃度（%）
+                </div>
+                <input
+                  style={inputStyle()}
+                  value={targetPercent2}
+                  onChange={(e) => setTargetPercent2(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
+
               <div style={cardStyle(true)}>
                 <div style={{ fontSize: 13, opacity: 0.8 }}>推定池水量</div>
                 <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
                   {formatVolume(estimatedVolume, unit)}
                 </div>
               </div>
+
+              <div style={{ height: 12 }} />
+
+              <div style={cardStyle(true)}>
+                <div style={{ fontSize: 13, opacity: 0.8 }}>あと必要な塩</div>
+                <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
+                  {formatSalt(needKg)}
+                </div>
+              </div>
+
+              <div style={{ height: 12 }} />
 
               <div style={infoBoxStyle("#ecfeff")}>
                 {reverseKg}kg ÷ ({reverseP}% × 10) = {estimatedTons.toFixed(2)}t
