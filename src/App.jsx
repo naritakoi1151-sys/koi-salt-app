@@ -13,12 +13,30 @@ function formatPercent(value) {
   return `${Number(value).toFixed(2)}%`;
 }
 
+function formatConcentration(value) {
+  if (!isFinite(value)) return "-";
+  return `${Number(value).toFixed(4)}%`;
+}
+
 function formatVolume(value, unit) {
   if (!isFinite(value)) return "-";
   if (unit === "t") {
     return `${value.toFixed(2)} t`;
   }
   return `${Math.round(value)} L`;
+}
+
+function formatLiters(value) {
+  if (!isFinite(value)) return "-";
+  if (value >= 1000) {
+    return `${value.toFixed(0)} L`;
+  }
+  return `${value.toFixed(1)} L`;
+}
+
+function formatDays(value) {
+  if (!isFinite(value)) return "-";
+  return `${value.toFixed(1)}日`;
 }
 
 function parseNumber(value) {
@@ -83,6 +101,14 @@ function infoBoxStyle(bg = "#f8fafc") {
   };
 }
 
+function sectionTitleStyle() {
+  return {
+    fontWeight: 800,
+    fontSize: 20,
+    marginBottom: 16,
+  };
+}
+
 export default function App() {
   const [tab, setTab] = useState("target");
   const [pondName, setPondName] = useState("千秋池");
@@ -97,10 +123,18 @@ export default function App() {
   const [reversePercent, setReversePercent] = useState("0.5");
   const [targetPercent2, setTargetPercent2] = useState("0.5");
 
+  // 差し水計算
+  const [sashiFlowValue, setSashiFlowValue] = useState("500");
+  const [sashiFlowUnit, setSashiFlowUnit] = useState("cc");
+  const [sashiCurrentSalt, setSashiCurrentSalt] = useState("0.50");
+  const [sashiTargetSalt, setSashiTargetSalt] = useState("0.30");
+
   const tons =
     unit === "t"
       ? parseNumber(pondVolume)
       : parseNumber(pondVolume) / 1000;
+
+  const pondLiters = tons * 1000;
 
   const changedTons =
     unit === "t"
@@ -146,6 +180,93 @@ export default function App() {
       ? "0.5%台。長期維持は注意。"
       : "比較的マイルドな濃度帯。";
 
+  // 差し水ロジック
+  const sashiFlowLitersPerMin =
+    sashiFlowUnit === "L"
+      ? parseNumber(sashiFlowValue)
+      : parseNumber(sashiFlowValue) / 1000;
+
+  const sashiCurrentSaltValue = parseNumber(sashiCurrentSalt);
+  const sashiTargetSaltValue = parseNumber(sashiTargetSalt);
+
+  const minuteReplacementRate =
+    pondLiters > 0 ? sashiFlowLitersPerMin / pondLiters : 0;
+
+  function getDilutedSalt(minutes) {
+    if (
+      pondLiters <= 0 ||
+      sashiFlowLitersPerMin < 0 ||
+      !isFinite(minuteReplacementRate) ||
+      minuteReplacementRate <= 0
+    ) {
+      return sashiCurrentSaltValue;
+    }
+
+    if (minuteReplacementRate >= 1) {
+      return 0;
+    }
+
+    return sashiCurrentSaltValue * Math.pow(1 - minuteReplacementRate, minutes);
+  }
+
+  function getChangeBlock(minutes) {
+    const liters = sashiFlowLitersPerMin * minutes;
+    const percent = pondLiters > 0 ? (liters / pondLiters) * 100 : 0;
+    const dilutedSalt = getDilutedSalt(minutes);
+
+    return {
+      liters,
+      percent,
+      dilutedSalt,
+    };
+  }
+
+  const hourBlock = getChangeBlock(60);
+  const dayBlock = getChangeBlock(1440);
+  const weekBlock = getChangeBlock(10080);
+
+  const reverseDays = useMemo(() => {
+    if (pondLiters <= 0) return null;
+    if (sashiFlowLitersPerMin <= 0) return null;
+    if (sashiCurrentSaltValue <= 0 || sashiTargetSaltValue <= 0) return null;
+    if (sashiTargetSaltValue >= sashiCurrentSaltValue) return null;
+    if (minuteReplacementRate <= 0 || minuteReplacementRate >= 1) return null;
+
+    const minutes =
+      Math.log(sashiTargetSaltValue / sashiCurrentSaltValue) /
+      Math.log(1 - minuteReplacementRate);
+
+    if (!isFinite(minutes) || minutes < 0) return null;
+
+    return minutes / 1440;
+  }, [
+    pondLiters,
+    sashiFlowLitersPerMin,
+    sashiCurrentSaltValue,
+    sashiTargetSaltValue,
+    minuteReplacementRate,
+  ]);
+
+  const reverseDaysRounded =
+    reverseDays != null ? Math.ceil(reverseDays) : null;
+
+  const sashiComment = useMemo(() => {
+    if (dayBlock.percent < 1) return "かなり緩やかな差し水です。日々の変化は小さめです。";
+    if (dayBlock.percent < 5) return "穏やかな差し水です。日単位で少しずつ水が入れ替わります。";
+    if (dayBlock.percent < 10) return "ちょうど見やすい差し水量です。塩分低下も意識してください。";
+    return "差し水量はやや強めです。塩分や水質変動に注意してください。";
+  }, [dayBlock.percent]);
+
+  const reverseComment = useMemo(() => {
+    if (reverseDays == null) {
+      return "現在塩分より低い目標塩分を入れると、到達日数を表示できます。";
+    }
+    if (reverseDays < 3) return "比較的早く薄まります。短期間での変化に注意。";
+    if (reverseDays < 7) return "数日単位で塩が落ちていきます。管理しやすい範囲です。";
+    if (reverseDays < 14) return "ゆっくり薄まります。日々の確認に向いています。";
+    return "かなりゆっくり薄まります。長期管理向きです。";
+  }, [reverseDays]);
+
   return (
     <div
       style={{
@@ -175,7 +296,7 @@ export default function App() {
           </div>
           <h1 style={{ margin: 0, fontSize: 32 }}>ラクラク塩分濃度計算</h1>
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-            すぐ使えてシンプル。
+            すぐ使えてシンプル。塩分計算と差し水計算をひとつに。
           </p>
         </div>
 
@@ -291,6 +412,9 @@ export default function App() {
             <button style={buttonStyle(tab === "reverse")} onClick={() => setTab("reverse")}>
               逆算
             </button>
+            <button style={buttonStyle(tab === "sashimizu")} onClick={() => setTab("sashimizu")}>
+              差し水計算
+            </button>
           </div>
         </div>
 
@@ -303,9 +427,7 @@ export default function App() {
             }}
           >
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-                現在濃度から目標濃度まで上げる
-              </div>
+              <div style={sectionTitleStyle()}>現在濃度から目標濃度まで上げる</div>
 
               <div style={{ display: "grid", gap: 14 }}>
                 <div style={infoBoxStyle()}>
@@ -336,9 +458,7 @@ export default function App() {
             </div>
 
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-                現場メモ
-              </div>
+              <div style={sectionTitleStyle()}>現場メモ</div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={infoBoxStyle("#fff7ed")}>{targetMemo}</div>
@@ -360,9 +480,7 @@ export default function App() {
             }}
           >
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-                指定した%だけ上げる
-              </div>
+              <div style={sectionTitleStyle()}>指定した%だけ上げる</div>
 
               <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
                 上げたい濃度（%）
@@ -406,9 +524,7 @@ export default function App() {
             </div>
 
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-                早見表
-              </div>
+              <div style={sectionTitleStyle()}>早見表</div>
 
               <div style={{ display: "grid", gap: 10 }}>
                 {quickRows.map((row) => (
@@ -441,9 +557,7 @@ export default function App() {
             }}
           >
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-                水換え後の補充計算
-              </div>
+              <div style={sectionTitleStyle()}>水換え後の補充計算</div>
 
               <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
                 水換え量（{unit}）
@@ -488,7 +602,7 @@ export default function App() {
             </div>
 
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>基準</div>
+              <div style={sectionTitleStyle()}>基準</div>
 
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={infoBoxStyle()}>0.1% = 1tあたり 1kg</div>
@@ -509,9 +623,7 @@ export default function App() {
             }}
           >
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-                投入量から池水量を逆算
-              </div>
+              <div style={sectionTitleStyle()}>投入量から池水量を逆算</div>
 
               <div style={{ marginBottom: 12 }}>
                 <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
@@ -573,9 +685,7 @@ export default function App() {
             </div>
 
             <div style={cardStyle()}>
-              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
-                使い方
-              </div>
+              <div style={sectionTitleStyle()}>使い方</div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={infoBoxStyle()}>
@@ -586,6 +696,203 @@ export default function App() {
                 </div>
                 <div style={infoBoxStyle()}>
                   実測と照らし合わせれば、池水量の見直しにも使えます。
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === "sashimizu" && (
+          <div style={{ display: "grid", gap: 20 }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 20,
+                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              }}
+            >
+              <div style={cardStyle()}>
+                <div style={sectionTitleStyle()}>差し水計算</div>
+
+                <div style={{ display: "grid", gap: 14 }}>
+                  <div>
+                    <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                      差し水量（1分あたり）
+                    </div>
+                    <input
+                      style={inputStyle()}
+                      value={sashiFlowValue}
+                      onChange={(e) => setSashiFlowValue(e.target.value)}
+                      inputMode="decimal"
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button
+                        style={buttonStyle(sashiFlowUnit === "cc")}
+                        onClick={() => setSashiFlowUnit("cc")}
+                      >
+                        cc
+                      </button>
+                      <button
+                        style={buttonStyle(sashiFlowUnit === "L")}
+                        onClick={() => setSashiFlowUnit("L")}
+                      >
+                        L
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                      現在の塩分濃度（%）
+                    </div>
+                    <input
+                      style={inputStyle()}
+                      value={sashiCurrentSalt}
+                      onChange={(e) => setSashiCurrentSalt(e.target.value)}
+                      inputMode="decimal"
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                      目標の塩分濃度（%）
+                    </div>
+                    <input
+                      style={inputStyle()}
+                      value={sashiTargetSalt}
+                      onChange={(e) => setSashiTargetSalt(e.target.value)}
+                      inputMode="decimal"
+                    />
+                  </div>
+
+                  <div style={infoBoxStyle("#ecfeff")}>
+                    池名：<strong>{pondName || "-"}</strong>
+                    <br />
+                    池水量：<strong>{formatVolume(unit === "t" ? tons : pondLiters, unit)}</strong>
+                    <br />
+                    1分あたり差し水量：
+                    <strong>
+                      {" "}
+                      {sashiFlowUnit === "cc"
+                        ? `${parseNumber(sashiFlowValue).toFixed(0)} cc`
+                        : `${parseNumber(sashiFlowValue).toFixed(2)} L`}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              <div style={cardStyle()}>
+                <div style={sectionTitleStyle()}>塩分低下シミュレーション</div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={infoBoxStyle("#fff7ed")}>{sashiComment}</div>
+                  <div style={infoBoxStyle()}>
+                    差し水は真水、池内は均一に混ざる前提の参考値です。
+                  </div>
+                  <div style={infoBoxStyle()}>
+                    目標塩分までの到達日数は、今の差し水量が継続すると仮定して計算しています。
+                  </div>
+                  <div style={cardStyle(true)}>
+                    <div style={{ fontSize: 13, opacity: 0.8 }}>目標塩分までの日数</div>
+                    <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
+                      {reverseDays != null ? formatDays(reverseDays) : "-"}
+                    </div>
+                    <div style={{ fontSize: 14, opacity: 0.85, marginTop: 8 }}>
+                      {reverseDaysRounded != null
+                        ? `切り上げ目安：約 ${reverseDaysRounded}日`
+                        : "※ 目標塩分は現在塩分より低くしてください"}
+                    </div>
+                  </div>
+                  <div style={infoBoxStyle()}>{reverseComment}</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 20,
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              }}
+            >
+              <div style={cardStyle()}>
+                <div style={sectionTitleStyle()}>1時間</div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={infoBoxStyle()}>
+                    <div style={{ fontSize: 13, color: "#475569" }}>入れ替わり量</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
+                      {formatLiters(hourBlock.liters)}
+                    </div>
+                  </div>
+
+                  <div style={infoBoxStyle()}>
+                    <div style={{ fontSize: 13, color: "#475569" }}>入れ替わり率</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
+                      {formatPercent(hourBlock.percent)}
+                    </div>
+                  </div>
+
+                  <div style={cardStyle(true)}>
+                    <div style={{ fontSize: 13, opacity: 0.8 }}>推定塩分濃度</div>
+                    <div style={{ fontSize: 30, fontWeight: 900, marginTop: 8 }}>
+                      {formatConcentration(hourBlock.dilutedSalt)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={cardStyle()}>
+                <div style={sectionTitleStyle()}>1日</div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={infoBoxStyle()}>
+                    <div style={{ fontSize: 13, color: "#475569" }}>入れ替わり量</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
+                      {formatLiters(dayBlock.liters)}
+                    </div>
+                  </div>
+
+                  <div style={infoBoxStyle()}>
+                    <div style={{ fontSize: 13, color: "#475569" }}>入れ替わり率</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
+                      {formatPercent(dayBlock.percent)}
+                    </div>
+                  </div>
+
+                  <div style={cardStyle(true)}>
+                    <div style={{ fontSize: 13, opacity: 0.8 }}>推定塩分濃度</div>
+                    <div style={{ fontSize: 30, fontWeight: 900, marginTop: 8 }}>
+                      {formatConcentration(dayBlock.dilutedSalt)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={cardStyle()}>
+                <div style={sectionTitleStyle()}>1週間</div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={infoBoxStyle()}>
+                    <div style={{ fontSize: 13, color: "#475569" }}>入れ替わり量</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
+                      {formatLiters(weekBlock.liters)}
+                    </div>
+                  </div>
+
+                  <div style={infoBoxStyle()}>
+                    <div style={{ fontSize: 13, color: "#475569" }}>入れ替わり率</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
+                      {formatPercent(weekBlock.percent)}
+                    </div>
+                  </div>
+
+                  <div style={cardStyle(true)}>
+                    <div style={{ fontSize: 13, opacity: 0.8 }}>推定塩分濃度</div>
+                    <div style={{ fontSize: 30, fontWeight: 900, marginTop: 8 }}>
+                      {formatConcentration(weekBlock.dilutedSalt)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
