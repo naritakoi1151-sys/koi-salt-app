@@ -292,9 +292,9 @@ export default function App() {
               fontWeight: 700,
             }}
           >
-            Narita 塩分濃度計算 Webアプリ
+            水管理くん
           </div>
-          <h1 style={{ margin: 0, fontSize: 32 }}>ラクラク塩分濃度計算</h1>
+          <h1 style={{ margin: 0, fontSize: 32 }}>鯉のための水管理ツール</h1>
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
             すぐ使えてシンプル。塩分計算と差し水計算をひとつに。
           </p>
