@@ -13,6 +13,14 @@ function formatPercent(value) {
   return `${Number(value).toFixed(2)}%`;
 }
 
+function formatVolume(value, unit) {
+  if (!isFinite(value)) return "-";
+  if (unit === "t") {
+    return `${value.toFixed(2)} t`;
+  }
+  return `${Math.round(value)} L`;
+}
+
 function parseNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -85,6 +93,9 @@ export default function App() {
   const [increasePercent, setIncreasePercent] = useState("0.07");
   const [changedWaterVolume, setChangedWaterVolume] = useState("2");
 
+  const [reverseSalt, setReverseSalt] = useState("10");
+  const [reversePercent, setReversePercent] = useState("0.5");
+
   const tons =
     unit === "t"
       ? parseNumber(pondVolume)
@@ -104,6 +115,11 @@ export default function App() {
   const increaseKg = tons * increase * 10;
   const refillKg = changedTons * current * 10;
   const finalPercent = current + increase;
+
+  const reverseKg = parseNumber(reverseSalt);
+  const reverseP = parseNumber(reversePercent);
+  const estimatedTons = reverseP > 0 ? reverseKg / (reverseP * 10) : 0;
+  const estimatedVolume = unit === "t" ? estimatedTons : estimatedTons * 1000;
 
   const quickRows = [0.1, 0.2, 0.3, 0.5, 0.6].map((percent) => ({
     percent,
@@ -207,17 +223,10 @@ export default function App() {
 
             <div>
               <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                <button
-                  style={buttonStyle(unit === "t")}
-                  onClick={() => setUnit("t")}
-                >
+                <button style={buttonStyle(unit === "t")} onClick={() => setUnit("t")}>
                   t
                 </button>
-
-                <button
-                  style={buttonStyle(unit === "L")}
-                  onClick={() => setUnit("L")}
-                >
+                <button style={buttonStyle(unit === "L")} onClick={() => setUnit("L")}>
                   L
                 </button>
               </div>
@@ -262,16 +271,10 @@ export default function App() {
 
         <div style={cardStyle()}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              style={buttonStyle(tab === "target")}
-              onClick={() => setTab("target")}
-            >
+            <button style={buttonStyle(tab === "target")} onClick={() => setTab("target")}>
               現在→目標
             </button>
-            <button
-              style={buttonStyle(tab === "increase")}
-              onClick={() => setTab("increase")}
-            >
+            <button style={buttonStyle(tab === "increase")} onClick={() => setTab("increase")}>
               指定%だけ上げる
             </button>
             <button
@@ -279,6 +282,9 @@ export default function App() {
               onClick={() => setTab("waterchange")}
             >
               水換え補充
+            </button>
+            <button style={buttonStyle(tab === "reverse")} onClick={() => setTab("reverse")}>
+              逆算
             </button>
           </div>
         </div>
@@ -484,6 +490,75 @@ export default function App() {
                 <div style={infoBoxStyle()}>0.3% = 1tあたり 3kg</div>
                 <div style={infoBoxStyle()}>0.5% = 1tあたり 5kg</div>
                 <div style={infoBoxStyle()}>0.6% = 1tあたり 6kg</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === "reverse" && (
+          <div
+            style={{
+              display: "grid",
+              gap: 20,
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            }}
+          >
+            <div style={cardStyle()}>
+              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+                投入量から池水量を逆算
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                  入れた塩（kg）
+                </div>
+                <input
+                  style={inputStyle()}
+                  value={reverseSalt}
+                  onChange={(e) => setReverseSalt(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                  上げた濃度（%）
+                </div>
+                <input
+                  style={inputStyle()}
+                  value={reversePercent}
+                  onChange={(e) => setReversePercent(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
+
+              <div style={cardStyle(true)}>
+                <div style={{ fontSize: 13, opacity: 0.8 }}>推定池水量</div>
+                <div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>
+                  {formatVolume(estimatedVolume, unit)}
+                </div>
+              </div>
+
+              <div style={infoBoxStyle("#ecfeff")}>
+                {reverseKg}kg ÷ ({reverseP}% × 10) = {estimatedTons.toFixed(2)}t
+              </div>
+            </div>
+
+            <div style={cardStyle()}>
+              <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>
+                使い方
+              </div>
+
+              <div style={{ display: "grid", gap: 12 }}>
+                <div style={infoBoxStyle()}>
+                  例：10kg 入れて 0.5% 上がった → 2.00t
+                </div>
+                <div style={infoBoxStyle()}>
+                  L表示にしたい時は上の unit を L に切り替えてください。
+                </div>
+                <div style={infoBoxStyle()}>
+                  実測と照らし合わせれば、池水量の見直しにも使えます。
+                </div>
               </div>
             </div>
           </div>
